@@ -69,3 +69,4 @@ Desktop.ini
 # Environment and sensitive local files
 *.env
 application-local.properties
+*.bat
