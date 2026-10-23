@@ -1,18 +1,6 @@
 # DeviozRecluta Express - Backend API REST
 
-Proyecto base y arquitectura inicial para la API REST del sistema **DeviozRecluta Express**, desarrollado con **Java 21** y **Spring Boot 3.3.x**.
-
----
-
-## 📋 Resumen del Proyecto y Responsabilidad (Persona 1)
-
-Este repositorio contiene la configuración base estructural, técnica y de conectividad del backend para el equipo de desarrollo:
-- Configuración de dependencias Maven (`pom.xml`).
-- Conexión y persistencia con **MySQL** (entorno XAMPP) mediante **Spring Data JPA**.
-- Configuración y documentación interactiva con **OpenAPI 3 / Swagger UI**.
-- Manejo centralizado y estandarizado de excepciones (`@RestControllerAdvice`).
-- Configuración de políticas de CORS para integración con clientes web y móviles.
-- Estructura limpia por capas lista para el desarrollo colaborativo (Personas 2, 3, 4, etc.).
+API REST integral para la gestión ágil y eficiente del proceso de reclutamiento y selección de talento, desarrollada con **Java 21**, **Spring Boot 3.3.4** y **Spring Data JPA**.
 
 ---
 
@@ -22,124 +10,136 @@ Este repositorio contiene la configuración base estructural, técnica y de cone
 | :--- | :--- | :--- |
 | **Lenguaje** | Java | 21 (LTS) |
 | **Framework** | Spring Boot | 3.3.4 |
-| **Persistencia** | Spring Data JPA / Hibernate | 3.3.x |
-| **Validación** | Spring Boot Starter Validation | Jakarta Bean Validation |
-| **Base de Datos** | MySQL | 8.0+ / MariaDB (XAMPP) |
+| **Persistencia** | Spring Data JPA / Hibernate ORM | 6.5.x |
+| **Validación** | Jakarta Bean Validation (Hibernate Validator) | 3.0.x |
+| **Base de Datos** | MySQL / MariaDB (entorno XAMPP) | 8.0+ / 10.4+ |
 | **Driver BD** | MySQL Connector/J | 8.3.x |
 | **Productividad** | Project Lombok | 1.18.x |
-| **Documentación** | SpringDoc OpenAPI Starter | 2.5.0 |
-| **Testing** | Spring Boot Starter Test (JUnit 5, Mockito) | 3.3.4 |
+| **Documentación** | SpringDoc OpenAPI Starter (Swagger UI 3) | 2.5.0 |
+| **Testing** | JUnit 5, Mockito, Spring Boot Test (MockMvc) | 3.3.4 |
 
 ---
 
-## 📁 Estructura del Proyecto
+## 🗄️ Configuración de Base de Datos y Modelo de Datos
 
-El código fuente sigue el estándar de empaquetado por capas dentro del package raíz `com.devioz.recluta`:
-
-```text
-devioz-recluta/
-├── .gitignore
-├── pom.xml
-├── README.md
-└── src/
-    ├── main/
-    │   ├── java/
-    │   │   └── com/
-    │   │       └── devioz/
-    │   │           └── recluta/
-    │   │               ├── DeviozReclutaApplication.java  # Clase principal Spring Boot
-    │   │               ├── common/                        # Clases transversales y respuestas estándar
-    │   │               │   └── ErrorResponse.java
-    │   │               ├── config/                        # Configuraciones (OpenAPI, CORS, etc.)
-    │   │               │   ├── CorsConfig.java
-    │   │               │   └── OpenApiConfig.java
-    │   │               ├── controller/                    # Controladores REST (@RestController)
-    │   │               │   └── StatusController.java
-    │   │               ├── dto/                           # Data Transfer Objects (Requests / Responses)
-    │   │               ├── exception/                     # Excepciones personalizadas y Handler global
-    │   │               │   ├── BadRequestException.java
-    │   │               │   ├── GlobalExceptionHandler.java
-    │   │               │   └── ResourceNotFoundException.java
-    │   │               ├── model/                         # Entidades JPA (@Entity)
-    │   │               ├── repository/                    # Interfaces de persistencia (JpaRepository)
-    │   │               └── service/                       # Interfaces e implementación de reglas de negocio
-    │   └── resources/
-    │       ├── application.properties                     # Configuración de entorno y propiedades Spring
-    │       └── data.sql                                   # Script de inicialización de datos (seed)
-    └── test/
-        └── java/
-            └── com/
-                └── devioz/
-                    └── recluta/
-                        └── DeviozReclutaApplicationTests.java
-```
-
----
-
-## 🗄️ Configuración de la Base de Datos (MySQL - XAMPP)
-
-La aplicación está preconfigurada en `src/main/resources/application.properties` para conectarse a una instancia local de MySQL (XAMPP por defecto):
-
-- **Host y Puerto:** `localhost:3306`
-- **Base de datos:** `devioz_recluta` (se crea automáticamente si no existe gracias a `createDatabaseIfNotExist=true`)
+La aplicación utiliza **MySQL** configurado en `src/main/resources/application.properties`:
+- **URL JDBC:** `jdbc:mysql://localhost:3306/devioz_recluta?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=America/Lima&allowPublicKeyRetrieval=true`
 - **Usuario:** `root`
 - **Contraseña:** *(vacía por defecto en XAMPP)*
-- **Zona Horaria:** `America/Lima`
-- **Estrategia DDL:** `update` (crea o actualiza las tablas según las entidades JPA)
-- **Ejecución diferida de datos:** `spring.jpa.defer-datasource-initialization=true` permite que `data.sql` se ejecute después de crear el esquema de tablas.
+- **Hibernate DDL Auto:** `update` (crea o actualiza el esquema relacional de forma automática).
+
+### Entidades y Tablas Principales (5 tablas generadas por Hibernate):
+1. **`vacantes`**: Catálogo de oportunidades laborales (`titulo`, `cliente`, `seniority`, `salario_minimo`, `salario_maximo`, `modalidad`, `estado`).
+2. **`postulantes`**: Registro de candidatos (`nombres`, `apellidos`, `dni` [único, 8 dígitos], `email` [único], `telefono`, `anios_experiencia`, `habilidades`, `fecha_registro`).
+3. **`postulaciones`**: Vínculo entre un candidato y una vacante (`postulante_id`, `vacante_id`, `estado`, `fecha`). Posee restricción única de postulación por vacante.
+4. **`historial_estados`**: Auditoría y trazabilidad cronológica de cambios de estado (`postulacion_id`, `estado_anterior`, `estado_nuevo`, `fecha_cambio`, `comentario`).
+5. **`entrevistas`**: Gestión de agenda técnica y RRHH (`postulacion_id`, `entrevistador`, `fecha_hora`, `duracion_minutos`, `estado`, `puntaje`, `comentario`).
+
+### Inicialización de Datos (`data.sql`):
+Al iniciar la aplicación con `spring.jpa.defer-datasource-initialization=true`, se ejecuta automáticamente `src/main/resources/data.sql` precargando:
+- **3 Vacantes de prueba** con distintos niveles de seniority (`SENIOR`, `SEMI_SENIOR`, `JUNIOR`) y modalidades.
+- **8 Postulantes de prueba** con perfiles técnicos completos.
 
 ---
 
 ## 🚀 Guía de Instalación y Ejecución
 
 ### Prerrequisitos
-1. **JDK 21** instalado y configurado en la variable de entorno `JAVA_HOME`.
+1. **Java Development Kit (JDK) 21** instalado y configurado en `JAVA_HOME`.
 2. **Apache Maven 3.8+** instalado.
-3. **XAMPP / MySQL** en ejecución (puerto 3306).
+3. **MySQL (XAMPP)** en ejecución escuchando en el puerto `3306`.
 
-### Pasos para iniciar la API
-
-1. **Verificar que MySQL esté activo en XAMPP:**
-   Asegúrate de que el módulo **MySQL** esté en estado *Running* en el Panel de Control de XAMPP.
-
-2. **Compilar y empaquetar el proyecto:**
+### Pasos para Levantar la Aplicación
+1. **Iniciar el servicio MySQL:**
+   - Asegúrate de que MySQL esté activo en el Panel de Control de XAMPP (puerto 3306).
+2. **Compilar y verificar el proyecto:**
    ```bash
-   mvn clean package -DskipTests
+   mvn clean compile
    ```
-
-3. **Ejecutar el servicio:**
+3. **Iniciar el servidor Spring Boot:**
    ```bash
    mvn spring-boot:run
    ```
-
-   O ejecutando directamente el archivo JAR generado:
-   ```bash
-   java -jar target/devioz-recluta-0.0.1-SNAPSHOT.jar
-   ```
+   *La aplicación arrancará por defecto en el puerto `8080`.*
 
 ---
 
-## 🌐 Endpoints de Verificación y Documentación
+## 🧪 Ejecución de Pruebas Unitarias y de Integración
 
-Una vez iniciada la aplicación en el puerto `8080`:
+El proyecto cuenta con una completa suite de pruebas automatizadas con **JUnit 5**, **Mockito** y **MockMvc** para controladores y servicios:
+- **80 pruebas automatizadas** que cubren validaciones de campos, reglas de negocio, cruces de horarios y respuestas REST.
 
-| Recurso | URL | Descripción |
-| :--- | :--- | :--- |
-| **Swagger UI** | [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html) | Interfaz gráfica interactiva para consultar y probar la API |
-| **OpenAPI Docs (JSON)** | [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs) | Especificación técnica OpenAPI en formato JSON |
-| **Status API** | [http://localhost:8080/api/v1/status](http://localhost:8080/api/v1/status) | Endpoint de verificación de salud del servicio |
+Para ejecutar toda la suite de pruebas:
+```bash
+mvn test
+```
+
+Para generar el empaquetado JAR validando las pruebas:
+```bash
+mvn clean package
+```
 
 ---
 
-## 👥 Guía de Colaboración para los Integrantes del Equipo
+## 📖 Documentación de la API (Swagger UI / OpenAPI)
 
-Para los desarrolladores responsables de implementar los módulos funcionales (candidatos, vacantes, procesos de selección, etc.):
+Una vez levantada la aplicación, accede a la documentación interactiva y sandbox de pruebas:
+- **Swagger UI:** [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
+- **OpenAPI Schema (JSON):** [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
 
-1. **Modelos:** Crear las entidades JPA dentro de `com.devioz.recluta.model` usando anotaciones de Jakarta Persistence (`@Entity`, `@Table`, `@Id`, `@GeneratedValue`, etc.) y Lombok (`@Getter`, `@Setter`, `@NoArgsConstructor`, `@AllArgsConstructor`, `@Builder`).
-2. **Repositorios:** Definir interfaces que extiendan de `JpaRepository<Entidad, ID>` en `com.devioz.recluta.repository`.
-3. **Servicios:** Declarar interfaces y sus implementaciones con `@Service` y `@Transactional` en `com.devioz.recluta.service`.
-4. **Controladores:** Implementar clases anotadas con `@RestController`, `@RequestMapping` y documentadas con `@Tag` y `@Operation` de Swagger en `com.devioz.recluta.controller`.
-5. **Manejo de Errores:**
-   - Para elementos no encontrados, lanzar `throw new ResourceNotFoundException("Mensaje o recurso no encontrado");`.
-   - Para peticiones inválidas o lógica inconsistente, lanzar `throw new BadRequestException("Motivo del error");`.
-   - `GlobalExceptionHandler` interceptará automáticamente estas excepciones y las convertirá en respuestas JSON con el formato estructurado `ErrorResponse`.
+---
+
+## 📌 Catálogo de Endpoints por Módulos
+
+### 🔷 MÓDULO 1: Gestión de Vacantes (`com.devioz.recluta.vacantes`)
+
+| Método | Endpoint | Descripción | Respuestas |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/vacantes` | Lista todas las vacantes. Permite filtrar por `?estado=ABIERTA` o `CERRADA`. | `200 OK` |
+| `GET` | `/api/vacantes/{id}` | Obtiene el detalle de una vacante por su ID. | `200 OK`, `404 Not Found` |
+| `POST` | `/api/vacantes` | Registra una nueva vacante en estado `ABIERTA`. Valida salarios (`min <= max`). | `201 Created`, `400 Bad Request` |
+| `PUT` | `/api/vacantes/{id}` | Modifica los datos de una vacante. No permite modificar vacantes `CERRADA`. | `200 OK`, `400 Bad Request`, `404 Not Found` |
+| `PATCH` | `/api/vacantes/{id}/cerrar` | Cierra administrativamente una vacante abierta. | `200 OK`, `400 Bad Request`, `404 Not Found` |
+
+---
+
+### 🔷 MÓDULO 2: Gestión de Postulantes (`com.devioz.recluta.postulantes`)
+
+| Método | Endpoint | Descripción | Respuestas |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/postulantes` | Listado paginado de candidatos con filtro opcional de búsqueda `?q=` (nombre, apellido o DNI). | `200 OK` |
+| `GET` | `/api/postulantes/{id}` | Consulta el perfil completo de un candidato por ID. | `200 OK`, `404 Not Found` |
+| `POST` | `/api/postulantes` | Registra un nuevo candidato. Valida formato de DNI (8 dígitos) y unicidad de DNI y email. | `201 Created`, `400 Bad Request` |
+| `PUT` | `/api/postulantes/{id}` | Actualiza información del candidato validando colisiones de DNI o correo. | `200 OK`, `400 Bad Request`, `404 Not Found` |
+| `DELETE`| `/api/postulantes/{id}` | Elimina un postulante si no tiene postulaciones registradas en el sistema. | `204 No Content`, `400 Bad Request`, `404 Not Found` |
+
+---
+
+### 🔷 MÓDULO 3: Postulaciones y Ciclo de Estados (`com.devioz.recluta.postulaciones`)
+
+| Método | Endpoint | Descripción | Respuestas |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/vacantes/{id}/postulaciones` | Registra la postulación de un candidato a una vacante. Valida vacante `ABIERTA` y postulación única. | `201 Created`, `400 Bad Request`, `404 Not Found` |
+| `GET` | `/api/vacantes/{id}/postulaciones` | Lista todas las postulaciones asociadas a una vacante específica. | `200 OK`, `404 Not Found` |
+| `PATCH`| `/api/postulaciones/{id}/estado` | Transición controlada en el embudo (`POSTULADO` ➔ `EN_REVISION` ➔ `ENTREVISTA` ➔ `CONTRATADO` / `RECHAZADO`). Si se marca `CONTRATADO`, la vacante se cierra automáticamente. | `200 OK`, `400 Bad Request`, `404 Not Found` |
+| `GET` | `/api/postulaciones/{id}/historial` | Consulta la bitácora cronológica de auditoría de cambios de estado. | `200 OK`, `404 Not Found` |
+
+---
+
+### 🔷 MÓDULO 4: Entrevistas y Resumen Ejecutivo (`com.devioz.recluta.entrevistas`)
+
+| Método | Endpoint | Descripción | Respuestas |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/postulaciones/{id}/entrevistas` | Agenda una entrevista. Requiere que la postulación esté en `ENTREVISTA`, fecha futura y sin cruces de horario para el entrevistador. | `201 Created`, `400 Bad Request`, `404 Not Found` |
+| `PATCH`| `/api/entrevistas/{id}/resultado` | Registra resultado (`REALIZADA` o `CANCELADA`). Para `REALIZADA` exige puntaje obligatorio de 1 a 5. | `200 OK`, `400 Bad Request`, `404 Not Found` |
+| `GET` | `/api/entrevistas` | Lista entrevistas ordenadas cronológicamente. Soporta filtro opcional `?fecha=YYYY-MM-DD`. | `200 OK` |
+| `GET` | `/api/resumen` | Genera dashboard con total de vacantes abiertas, postulaciones en los 5 estados y entrevistas del día de hoy. | `200 OK` |
+
+---
+
+## 🛡️ Manejo Global de Errores
+
+El proyecto cuenta con un `@RestControllerAdvice` (`GlobalExceptionHandler`) que estandariza todas las respuestas de error en un formato JSON consistente (`ErrorResponse`):
+- `400 Bad Request`: Validaciones de campos de entrada (`MethodArgumentNotValidException`) e incumplimiento de reglas del negocio (`BusinessRuleException`).
+- `404 Not Found`: Entidades o recursos no localizados (`ResourceNotFoundException`).
+- `500 Internal Server Error`: Fallos no controlados del servidor.

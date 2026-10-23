@@ -11,4 +11,6 @@ import java.util.List;
 public interface VacanteRepository extends JpaRepository<Vacante, Long> {
 
     List<Vacante> findByEstado(EstadoVacante estado);
+
+    long countByEstado(EstadoVacante estado);
 }
